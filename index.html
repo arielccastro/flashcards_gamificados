@@ -6,23 +6,25 @@
     <title>QG do Concurseiro - Flashcards</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center pt-10 font-sans">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center pt-8 font-sans pb-10">
 
     <!-- Menu de Navegação -->
-    <div class="w-full max-w-md flex justify-between mb-4 px-4">
-        <button onclick="mudarAba('estudo')" class="font-bold text-blue-600 hover:text-blue-800">📚 Estudar</button>
-        <button onclick="mudarAba('criar')" class="font-bold text-green-600 hover:text-green-800">➕ Criar Card</button>
+    <div class="w-full max-w-md flex justify-around mb-4 px-2 border-b border-gray-300 pb-2 bg-white rounded-lg shadow-sm">
+        <button onclick="mudarAba('estudo')" class="font-bold text-blue-600 hover:text-blue-800 p-2">📚 Estudar</button>
+        <button onclick="mudarAba('criar')" class="font-bold text-green-600 hover:text-green-800 p-2">➕ Criar / Importar</button>
+        <button onclick="mudarAba('estatisticas')" class="font-bold text-orange-500 hover:text-orange-700 p-2">📊 Estatísticas</button>
     </div>
 
     <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-6 relative">
         
         <!-- ÁREA DE ESTUDO -->
         <div id="area-estudo">
-            
-            <!-- Escolha do Baralho para Estudar -->
-            <div class="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                <label class="block text-sm text-blue-800 font-bold mb-1">Qual matéria revisar agora?</label>
-                <select id="select-estudo-baralho" onchange="carregarFila()" class="w-full border-gray-300 rounded p-2 text-gray-700 bg-white font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            <div class="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100 flex flex-col gap-2">
+                <label class="block text-sm text-blue-800 font-bold">Matéria:</label>
+                <select id="select-estudo-baralho" onchange="carregarTopicos('estudo')" class="w-full border-gray-300 rounded p-2 bg-white text-sm"></select>
+                
+                <label class="block text-sm text-blue-800 font-bold mt-1">Tópico:</label>
+                <select id="select-estudo-topico" onchange="carregarFila()" class="w-full border-gray-300 rounded p-2 bg-white text-sm"></select>
             </div>
 
             <div class="flex justify-between items-center mb-6 text-gray-600 border-b pb-4">
@@ -37,101 +39,167 @@
                 <button id="btn-mostrar" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg hidden shadow">Mostrar Resposta</button>
                 <div id="btn-feedbacks" class="flex gap-4 hidden">
                     <button onclick="registrarResposta('errei')" class="w-1/2 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 rounded-lg shadow">🔴 Errei</button>
-                    <button onclick="registrarResposta('acertei')" class="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow">🟢 Acertei (+10 XP)</button>
+                    <button onclick="registrarResposta('acertei')" class="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow">🟢 Acertei (+10)</button>
                 </div>
             </div>
             <div id="msg-fim" class="hidden text-center py-10">
                 <h2 class="text-2xl font-bold text-green-600 mb-2">🎉 Tudo limpo!</h2>
-                <p class="text-gray-600">Nenhuma carta pendente nesta matéria.</p>
+                <p class="text-gray-600">Nenhuma carta pendente neste tópico.</p>
             </div>
         </div>
 
-        <!-- ÁREA DE CRIAÇÃO -->
+        <!-- ÁREA DE CRIAÇÃO E IMPORTAÇÃO -->
         <div id="area-criar" class="hidden">
-            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Nova Ficha</h2>
-            <div class="flex flex-col gap-4">
-                
-                <!-- Escolha do Baralho para Salvar -->
-                <div>
-                    <label class="block text-gray-700 font-bold mb-1">Matéria (Deck)</label>
-                    <select id="select-criar-baralho" class="w-full border border-gray-300 rounded p-2 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"></select>
-                </div>
-
-                <div>
-                    <label class="block text-gray-700 font-bold mb-1">Frente (Pergunta)</label>
-                    <textarea id="nova-frente" class="w-full border rounded-lg p-2 h-20" placeholder="Ex: Qual o prazo para..."></textarea>
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-bold mb-1">Verso (Resposta)</label>
-                    <textarea id="novo-verso" class="w-full border rounded-lg p-2 h-24" placeholder="Ex: 5 anos, contados da..."></textarea>
-                </div>
-                <button onclick="salvarCard()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow mt-2">Salvar Ficha</button>
-                <p id="msg-sucesso" class="text-green-600 font-bold text-center hidden">Ficha adicionada com sucesso!</p>
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Gerenciar Cartas</h2>
+            
+            <div class="mb-4 flex flex-col gap-2">
+                <label class="block text-sm text-gray-700 font-bold">Matéria:</label>
+                <select id="select-criar-baralho" onchange="carregarTopicos('criar')" class="w-full border border-gray-300 rounded p-2 bg-white"></select>
+                <label class="block text-sm text-gray-700 font-bold mt-1">Tópico:</label>
+                <select id="select-criar-topico" class="w-full border border-gray-300 rounded p-2 bg-white"></select>
             </div>
+
+            <div class="flex flex-col gap-3">
+                <label class="block text-sm text-gray-700 font-bold mt-2">Criar Manualmente</label>
+                <textarea id="nova-frente" class="w-full border rounded-lg p-2 h-16 text-sm" placeholder="Pergunta..."></textarea>
+                <textarea id="novo-verso" class="w-full border rounded-lg p-2 h-16 text-sm" placeholder="Resposta..."></textarea>
+                <button onclick="salvarCardUnico()" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg shadow">Salvar 1 Ficha</button>
+            </div>
+
+            <div class="mt-6 p-4 border rounded-lg bg-gray-50 border-dashed border-gray-300">
+                <label class="block text-sm text-gray-700 font-bold mb-1">Importar em Lote (CSV)</label>
+                <p class="text-xs text-gray-500 mb-3">O arquivo CSV deve conter o formato <b>Pergunta;Resposta</b> em cada linha.</p>
+                <input type="file" id="arquivo-csv" accept=".csv" class="mb-3 text-sm w-full">
+                <button onclick="importarCSV()" class="w-full bg-purple-600 text-white font-bold py-2 rounded-lg shadow">Processar e Importar CSV</button>
+            </div>
+            
+            <p id="msg-sucesso" class="text-green-600 font-bold text-center mt-4 hidden">Operação realizada com sucesso!</p>
+        </div>
+
+        <!-- ÁREA DE ESTATÍSTICAS -->
+        <div id="area-estatisticas" class="hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-2 border-b pb-2">Ranking: Cards Mais Errados 📉</h2>
+            <p class="text-sm text-gray-500 mb-4">Foque nestes conceitos antes da prova.</p>
+            <ul id="lista-ranking" class="divide-y divide-gray-200">
+                <!-- Preenchido via JS -->
+            </ul>
         </div>
 
     </div>
 
     <script>
-        let fila = [];
-        let cartaAtual = null;
-        let combo = 0;
+        let fila = [], cartaAtual = null, combo = 0;
         const usuarioId = 1;
 
         async function inicializarApp() {
-            // 1. Busca os baralhos do banco de dados
             const res = await fetch(`/api/baralhos/${usuarioId}`);
             const baralhos = await res.json();
             
-            const selectEstudo = document.getElementById('select-estudo-baralho');
-            const selectCriar = document.getElementById('select-criar-baralho');
+            const sEstudo = document.getElementById('select-estudo-baralho');
+            const sCriar = document.getElementById('select-criar-baralho');
+            sEstudo.innerHTML = ''; sCriar.innerHTML = '';
             
-            selectEstudo.innerHTML = '';
-            selectCriar.innerHTML = '';
-            
-            // 2. Preenche as caixas de seleção
             baralhos.forEach(b => {
                 const opt = `<option value="${b.id}">${b.nome}</option>`;
-                selectEstudo.innerHTML += opt;
-                selectCriar.innerHTML += opt;
+                sEstudo.innerHTML += opt; sCriar.innerHTML += opt;
             });
 
-            // 3. Carrega a fila do primeiro baralho da lista
-            carregarFila();
+            if(baralhos.length > 0) {
+                await carregarTopicos('estudo');
+                await carregarTopicos('criar');
+            }
         }
 
-        function mudarAba(aba) {
+        async function carregarTopicos(aba) {
+            const baralhoId = document.getElementById(`select-${aba}-baralho`).value;
+            const res = await fetch(`/api/topicos/${baralhoId}`);
+            const topicos = await res.json();
+            
+            const selectTopico = document.getElementById(`select-${aba}-topico`);
+            selectTopico.innerHTML = '';
+            
+            topicos.forEach(t => {
+                selectTopico.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+            });
+
+            if(aba === 'estudo' && topicos.length > 0) carregarFila();
+        }
+
+        async function mudarAba(aba) {
             document.getElementById('area-estudo').classList.toggle('hidden', aba !== 'estudo');
             document.getElementById('area-criar').classList.toggle('hidden', aba !== 'criar');
+            document.getElementById('area-estatisticas').classList.toggle('hidden', aba !== 'estatisticas');
+            
             if(aba === 'estudo') carregarFila();
+            if(aba === 'estatisticas') carregarEstatisticas();
         }
 
-        async function salvarCard() {
-            const baralho_id = parseInt(document.getElementById('select-criar-baralho').value);
+        // FUNÇÕES DE CRIAÇÃO E IMPORTAÇÃO
+        function mostrarSucesso(msgText) {
+            const msg = document.getElementById('msg-sucesso');
+            msg.innerText = msgText;
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 4000);
+        }
+
+        async function salvarCardUnico() {
+            const topico_id = parseInt(document.getElementById('select-criar-topico').value);
             const frente = document.getElementById('nova-frente').value;
             const verso = document.getElementById('novo-verso').value;
             
             if(!frente || !verso) return alert("Preencha frente e verso!");
 
             await fetch('/api/fichas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ baralho_id, frente, verso, usuario_id: usuarioId })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topico_id, frente, verso, usuario_id: usuarioId })
             });
 
             document.getElementById('nova-frente').value = '';
             document.getElementById('novo-verso').value = '';
-            
-            const msg = document.getElementById('msg-sucesso');
-            msg.classList.remove('hidden');
-            setTimeout(() => msg.classList.add('hidden'), 3000);
+            mostrarSucesso("1 Ficha adicionada com sucesso!");
         }
 
-        async function carregarFila() {
-            const baralhoId = document.getElementById('select-estudo-baralho').value;
-            if (!baralhoId) return;
+        function importarCSV() {
+            const input = document.getElementById('arquivo-csv');
+            if(!input.files[0]) return alert("Selecione um arquivo CSV primeiro.");
+            
+            const topico_id = parseInt(document.getElementById('select-criar-topico').value);
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                const linhas = e.target.result.split('\n');
+                const fichasParaSalvar = [];
 
-            const res = await fetch(`/api/revisao/${usuarioId}/${baralhoId}`);
+                for(let linha of linhas) {
+                    const partes = linha.split(';');
+                    // Adiciona apenas se houver frente e verso (ignorando linhas em branco)
+                    if(partes.length >= 2 && partes[0].trim() !== '') {
+                        fichasParaSalvar.push({
+                            frente: partes[0].trim(),
+                            verso: partes.slice(1).join(';').trim() // Caso a resposta tenha um ponto e vírgula
+                        });
+                    }
+                }
+
+                if(fichasParaSalvar.length === 0) return alert("Nenhuma carta válida encontrada. Verifique se o formato é Pergunta;Resposta");
+
+                await fetch('/api/fichas/lote', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topico_id, usuario_id: usuarioId, fichas: fichasParaSalvar })
+                });
+
+                input.value = '';
+                mostrarSucesso(`${fichasParaSalvar.length} cartas importadas com sucesso!`);
+            };
+            reader.readAsText(input.files[0]);
+        }
+
+        // FUNÇÕES DE ESTUDO
+        async function carregarFila() {
+            const topicoId = document.getElementById('select-estudo-topico').value;
+            if (!topicoId) return;
+
+            const res = await fetch(`/api/revisao/${usuarioId}/${topicoId}`);
             const data = await res.json();
             fila = data.cartas;
             exibirProximaCarta();
@@ -173,23 +241,43 @@
 
         async function registrarResposta(resposta) {
             if(resposta === 'acertei') {
-                combo++;
-                document.getElementById('combo').innerText = combo;
+                combo++; document.getElementById('combo').innerText = combo;
             } else {
-                combo = 0;
-                document.getElementById('combo').innerText = combo;
+                combo = 0; document.getElementById('combo').innerText = combo;
             }
 
             await fetch('/api/responder', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ usuario_id: usuarioId, ficha_id: cartaAtual.ficha_id, resposta })
             });
-
             exibirProximaCarta();
         }
 
-        // Inicia o app preenchendo as matérias
+        // FUNÇÕES DE ESTATÍSTICA
+        async function carregarEstatisticas() {
+            const res = await fetch(`/api/estatisticas/${usuarioId}`);
+            const ranking = await res.json();
+            const lista = document.getElementById('lista-ranking');
+            lista.innerHTML = '';
+
+            if(ranking.length === 0) {
+                lista.innerHTML = '<p class="text-sm text-gray-500 py-4">Você ainda não registrou erros. Continue estudando!</p>';
+                return;
+            }
+
+            ranking.forEach((item, index) => {
+                lista.innerHTML += `
+                    <li class="py-3 flex justify-between items-center">
+                        <div class="flex flex-col pr-4">
+                            <span class="font-bold text-gray-800 text-sm">#${index+1} - ${item.frente}</span>
+                            <span class="text-xs text-gray-500">${item.baralho} > ${item.topico}</span>
+                        </div>
+                        <span class="bg-red-100 text-red-800 font-bold px-3 py-1 rounded-full text-sm shrink-0">${item.total_erros} erros</span>
+                    </li>
+                `;
+            });
+        }
+
         inicializarApp();
     </script>
 </body>
