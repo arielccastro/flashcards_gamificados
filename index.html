@@ -3,127 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QG do Concurseiro - Revisão</title>
+    <title>QG do Concurseiro - Flashcards</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center font-sans">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center pt-10 font-sans">
+
+    <!-- Menu de Navegação -->
+    <div class="w-full max-w-md flex justify-between mb-4 px-4">
+        <button onclick="mudarAba('estudo')" class="font-bold text-blue-600 hover:text-blue-800">📚 Estudar</button>
+        <button onclick="mudarAba('criar')" class="font-bold text-green-600 hover:text-green-800">➕ Criar Card</button>
+    </div>
 
     <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-6 relative">
-        <!-- HUD (Gamificação) -->
-        <div class="flex justify-between items-center mb-6 text-gray-600 border-b pb-4">
-            <span class="font-bold text-lg">🔥 Combo: <span id="combo">0</span></span>
-            <span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">Faltam: <span id="contador">0</span></span>
-        </div>
-
-        <!-- Área da Ficha -->
-        <div id="card-container" class="min-h-[250px] flex flex-col justify-center items-center text-center">
-            <h2 id="frente" class="text-2xl font-bold text-gray-800 mb-4">Carregando fichas...</h2>
-            <p id="verso" class="text-xl text-gray-600 hidden mt-4 pt-4 border-t w-full"></p>
-        </div>
-
-        <!-- Controles -->
-        <div class="mt-8 flex flex-col gap-3">
-            <button id="btn-mostrar" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow transition-colors hidden">
-                Mostrar Resposta
-            </button>
+        
+        <!-- ÁREA DE ESTUDO -->
+        <div id="area-estudo">
             
-            <div id="btn-feedbacks" class="flex gap-4 hidden">
-                <button onclick="registrarResposta('errei')" class="w-1/2 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 px-4 rounded-lg shadow transition-colors">
-                    🔴 Errei
-                </button>
-                <button onclick="registrarResposta('acertei')" class="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow transition-colors">
-                    🟢 Acertei (+10 XP)
-                </button>
+            <!-- Escolha do Baralho para Estudar -->
+            <div class="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <label class="block text-sm text-blue-800 font-bold mb-1">Qual matéria revisar agora?</label>
+                <select id="select-estudo-baralho" onchange="carregarFila()" class="w-full border-gray-300 rounded p-2 text-gray-700 bg-white font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+
+            <div class="flex justify-between items-center mb-6 text-gray-600 border-b pb-4">
+                <span class="font-bold text-lg">🔥 Combo: <span id="combo">0</span></span>
+                <span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">Faltam: <span id="contador">0</span></span>
+            </div>
+            <div id="card-container" class="min-h-[200px] flex flex-col justify-center items-center text-center">
+                <h2 id="frente" class="text-2xl font-bold text-gray-800 mb-4">Carregando fichas...</h2>
+                <p id="verso" class="text-xl text-gray-600 hidden mt-4 pt-4 border-t w-full"></p>
+            </div>
+            <div class="mt-8 flex flex-col gap-3">
+                <button id="btn-mostrar" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg hidden shadow">Mostrar Resposta</button>
+                <div id="btn-feedbacks" class="flex gap-4 hidden">
+                    <button onclick="registrarResposta('errei')" class="w-1/2 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 rounded-lg shadow">🔴 Errei</button>
+                    <button onclick="registrarResposta('acertei')" class="w-1/2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow">🟢 Acertei (+10 XP)</button>
+                </div>
+            </div>
+            <div id="msg-fim" class="hidden text-center py-10">
+                <h2 class="text-2xl font-bold text-green-600 mb-2">🎉 Tudo limpo!</h2>
+                <p class="text-gray-600">Nenhuma carta pendente nesta matéria.</p>
             </div>
         </div>
-        
-        <!-- Mensagem de Fim -->
-        <div id="msg-fim" class="hidden text-center py-10">
-            <h2 class="text-3xl font-bold text-green-600 mb-2">🎉 Sessão Concluída!</h2>
-            <p class="text-gray-600">Você revisou todas as cartas de hoje. Bom descanso!</p>
+
+        <!-- ÁREA DE CRIAÇÃO -->
+        <div id="area-criar" class="hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Nova Ficha</h2>
+            <div class="flex flex-col gap-4">
+                
+                <!-- Escolha do Baralho para Salvar -->
+                <div>
+                    <label class="block text-gray-700 font-bold mb-1">Matéria (Deck)</label>
+                    <select id="select-criar-baralho" class="w-full border border-gray-300 rounded p-2 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"></select>
+                </div>
+
+                <div>
+                    <label class="block text-gray-700 font-bold mb-1">Frente (Pergunta)</label>
+                    <textarea id="nova-frente" class="w-full border rounded-lg p-2 h-20" placeholder="Ex: Qual o prazo para..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-1">Verso (Resposta)</label>
+                    <textarea id="novo-verso" class="w-full border rounded-lg p-2 h-24" placeholder="Ex: 5 anos, contados da..."></textarea>
+                </div>
+                <button onclick="salvarCard()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow mt-2">Salvar Ficha</button>
+                <p id="msg-sucesso" class="text-green-600 font-bold text-center hidden">Ficha adicionada com sucesso!</p>
+            </div>
         </div>
+
     </div>
 
     <script>
-        const usuarioId = 1; // Fixo para este MVP
         let fila = [];
         let cartaAtual = null;
         let combo = 0;
+        const usuarioId = 1;
 
-        // Elementos da UI
-        const elFrente = document.getElementById('frente');
-        const elVerso = document.getElementById('verso');
-        const btnMostrar = document.getElementById('btn-mostrar');
-        const btnFeedbacks = document.getElementById('btn-feedbacks');
-        const cardContainer = document.getElementById('card-container');
-        const msgFim = document.getElementById('msg-fim');
-        const elContador = document.getElementById('contador');
-        const elCombo = document.getElementById('combo');
+        async function inicializarApp() {
+            // 1. Busca os baralhos do banco de dados
+            const res = await fetch(`/api/baralhos/${usuarioId}`);
+            const baralhos = await res.json();
+            
+            const selectEstudo = document.getElementById('select-estudo-baralho');
+            const selectCriar = document.getElementById('select-criar-baralho');
+            
+            selectEstudo.innerHTML = '';
+            selectCriar.innerHTML = '';
+            
+            // 2. Preenche as caixas de seleção
+            baralhos.forEach(b => {
+                const opt = `<option value="${b.id}">${b.nome}</option>`;
+                selectEstudo.innerHTML += opt;
+                selectCriar.innerHTML += opt;
+            });
+
+            // 3. Carrega a fila do primeiro baralho da lista
+            carregarFila();
+        }
+
+        function mudarAba(aba) {
+            document.getElementById('area-estudo').classList.toggle('hidden', aba !== 'estudo');
+            document.getElementById('area-criar').classList.toggle('hidden', aba !== 'criar');
+            if(aba === 'estudo') carregarFila();
+        }
+
+        async function salvarCard() {
+            const baralho_id = parseInt(document.getElementById('select-criar-baralho').value);
+            const frente = document.getElementById('nova-frente').value;
+            const verso = document.getElementById('novo-verso').value;
+            
+            if(!frente || !verso) return alert("Preencha frente e verso!");
+
+            await fetch('/api/fichas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ baralho_id, frente, verso, usuario_id: usuarioId })
+            });
+
+            document.getElementById('nova-frente').value = '';
+            document.getElementById('novo-verso').value = '';
+            
+            const msg = document.getElementById('msg-sucesso');
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 3000);
+        }
 
         async function carregarFila() {
-            const res = await fetch(`/api/revisao/${usuarioId}`);
+            const baralhoId = document.getElementById('select-estudo-baralho').value;
+            if (!baralhoId) return;
+
+            const res = await fetch(`/api/revisao/${usuarioId}/${baralhoId}`);
             const data = await res.json();
             fila = data.cartas;
             exibirProximaCarta();
         }
 
         function exibirProximaCarta() {
+            const btnMostrar = document.getElementById('btn-mostrar');
+            const btnFeedbacks = document.getElementById('btn-feedbacks');
+            const cardContainer = document.getElementById('card-container');
+            const msgFim = document.getElementById('msg-fim');
+
             if (fila.length === 0) {
                 cardContainer.classList.add('hidden');
                 btnMostrar.classList.add('hidden');
                 btnFeedbacks.classList.add('hidden');
                 msgFim.classList.remove('hidden');
-                elContador.innerText = "0";
+                document.getElementById('contador').innerText = "0";
                 return;
             }
 
-            cartaAtual = fila.shift(); // Remove a primeira da fila
-            elContador.innerText = fila.length + 1;
+            cardContainer.classList.remove('hidden');
+            msgFim.classList.add('hidden');
+            cartaAtual = fila.shift();
+            document.getElementById('contador').innerText = fila.length + 1;
             
-            // Estado inicial da carta
-            elFrente.innerText = cartaAtual.frente;
-            elVerso.innerText = cartaAtual.verso;
-            elVerso.classList.add('hidden');
+            document.getElementById('frente').innerText = cartaAtual.frente;
+            document.getElementById('verso').innerText = cartaAtual.verso;
+            document.getElementById('verso').classList.add('hidden');
             
             btnMostrar.classList.remove('hidden');
             btnFeedbacks.classList.add('hidden');
         }
 
-        btnMostrar.addEventListener('click', () => {
-            elVerso.classList.remove('hidden');
-            btnMostrar.classList.add('hidden');
-            btnFeedbacks.classList.remove('hidden');
+        document.getElementById('btn-mostrar').addEventListener('click', () => {
+            document.getElementById('verso').classList.remove('hidden');
+            document.getElementById('btn-mostrar').classList.add('hidden');
+            document.getElementById('btn-feedbacks').classList.remove('hidden');
         });
 
         async function registrarResposta(resposta) {
-            // Gamificação visual local
             if(resposta === 'acertei') {
                 combo++;
-                elCombo.innerText = combo;
-                elCombo.classList.add('text-orange-500');
+                document.getElementById('combo').innerText = combo;
             } else {
                 combo = 0;
-                elCombo.innerText = combo;
-                elCombo.classList.remove('text-orange-500');
+                document.getElementById('combo').innerText = combo;
             }
 
-            // Envia para o backend (Algoritmo SM-2)
             await fetch('/api/responder', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    usuario_id: usuarioId,
-                    ficha_id: cartaAtual.ficha_id,
-                    resposta: resposta
-                })
+                body: JSON.stringify({ usuario_id: usuarioId, ficha_id: cartaAtual.ficha_id, resposta })
             });
 
-            // Passa para a próxima
             exibirProximaCarta();
         }
 
-        // Inicia o app
-        carregarFila();
+        // Inicia o app preenchendo as matérias
+        inicializarApp();
     </script>
 </body>
 </html>
