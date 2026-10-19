@@ -14,6 +14,7 @@ app.add_middleware(
 
 DB_FILE = "flashcards.db"
 
+# --- MODELOS DE DADOS ---
 class RespostaReview(BaseModel):
     usuario_id: int
     ficha_id: int
@@ -28,8 +29,17 @@ class NovaFicha(BaseModel):
 class LoteFichas(BaseModel):
     topico_id: int
     usuario_id: int = 1
-    fichas: List[dict]  # [{"frente": "x", "verso": "y"}]
+    fichas: List[dict]
 
+class NovoBaralho(BaseModel):
+    nome: str
+    usuario_id: int = 1
+
+class NovoTopico(BaseModel):
+    nome: str
+    baralho_id: int
+
+# --- BANCO DE DADOS ---
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -46,10 +56,8 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO usuarios (nome) VALUES ('Concurseiro Alfa')")
-        # Populando Baralho e Tópicos de exemplo
         cursor.execute("INSERT INTO baralhos (usuario_id, nome) VALUES (1, 'Direito Constitucional')")
         cursor.execute("INSERT INTO topicos (baralho_id, nome) VALUES (1, 'Direitos Fundamentais')")
-        cursor.execute("INSERT INTO topicos (baralho_id, nome) VALUES (1, 'Organização do Estado')")
     conn.commit()
     conn.close()
 
@@ -62,6 +70,7 @@ def read_root():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
+# --- ROTAS DE LEITURA (GET) ---
 @app.get("/api/baralhos/{usuario_id}")
 def get_baralhos(usuario_id: int):
     conn = sqlite3.connect(DB_FILE)
@@ -98,6 +107,45 @@ def get_fila_revisao(usuario_id: int, topico_id: int):
     cartas = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return {"quantidade": len(cartas), "cartas": cartas}
+
+@app.get("/api/estatisticas/{usuario_id}")
+def get_estatisticas(usuario_id: int):
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT f.frente, pf.total_erros, t.nome as topico, b.nome as baralho
+        FROM fichas f
+        INNER JOIN progresso_fichas pf ON f.id = pf.ficha_id
+        INNER JOIN topicos t ON f.topico_id = t.id
+        INNER JOIN baralhos b ON t.baralho_id = b.id
+        WHERE pf.usuario_id = ? AND pf.total_erros > 0
+        ORDER BY pf.total_erros DESC LIMIT 10
+    """, (usuario_id,))
+    ranking = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return ranking
+
+# --- ROTAS DE ESCRITA (POST) ---
+@app.post("/api/baralhos")
+def criar_baralho(req: NovoBaralho):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO baralhos (usuario_id, nome) VALUES (?, ?)", (req.usuario_id, req.nome))
+    baralho_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return {"status": "sucesso", "id": baralho_id, "nome": req.nome}
+
+@app.post("/api/topicos")
+def criar_topico(req: NovoTopico):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO topicos (baralho_id, nome) VALUES (?, ?)", (req.baralho_id, req.nome))
+    topico_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return {"status": "sucesso", "id": topico_id, "nome": req.nome}
 
 @app.post("/api/responder")
 def registrar_resposta(req: RespostaReview):
@@ -146,21 +194,3 @@ def criar_fichas_lote(req: LoteFichas):
     conn.commit()
     conn.close()
     return {"status": "sucesso", "quantidade": len(req.fichas)}
-
-@app.get("/api/estatisticas/{usuario_id}")
-def get_estatisticas(usuario_id: int):
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT f.frente, pf.total_erros, t.nome as topico, b.nome as baralho
-        FROM fichas f
-        INNER JOIN progresso_fichas pf ON f.id = pf.ficha_id
-        INNER JOIN topicos t ON f.topico_id = t.id
-        INNER JOIN baralhos b ON t.baralho_id = b.id
-        WHERE pf.usuario_id = ? AND pf.total_erros > 0
-        ORDER BY pf.total_erros DESC LIMIT 10
-    """, (usuario_id,))
-    ranking = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return ranking
