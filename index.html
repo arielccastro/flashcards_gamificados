@@ -54,9 +54,16 @@
             
             <div class="mb-4 flex flex-col gap-2">
                 <label class="block text-sm text-gray-700 font-bold">Matéria:</label>
-                <select id="select-criar-baralho" onchange="carregarTopicos('criar')" class="w-full border border-gray-300 rounded p-2 bg-white"></select>
+                <div class="flex gap-2">
+                    <select id="select-criar-baralho" onchange="carregarTopicos('criar')" class="w-full border border-gray-300 rounded p-2 bg-white"></select>
+                    <button onclick="novaMateria()" class="bg-blue-100 text-blue-700 font-bold px-4 rounded hover:bg-blue-200 shadow-sm transition" title="Criar Nova Matéria">+</button>
+                </div>
+
                 <label class="block text-sm text-gray-700 font-bold mt-1">Tópico:</label>
-                <select id="select-criar-topico" class="w-full border border-gray-300 rounded p-2 bg-white"></select>
+                <div class="flex gap-2">
+                    <select id="select-criar-topico" class="w-full border border-gray-300 rounded p-2 bg-white"></select>
+                    <button onclick="novoTopico()" class="bg-blue-100 text-blue-700 font-bold px-4 rounded hover:bg-blue-200 shadow-sm transition" title="Criar Novo Tópico">+</button>
+                </div>
             </div>
 
             <div class="flex flex-col gap-3">
@@ -112,6 +119,8 @@
 
         async function carregarTopicos(aba) {
             const baralhoId = document.getElementById(`select-${aba}-baralho`).value;
+            if(!baralhoId) return;
+
             const res = await fetch(`/api/topicos/${baralhoId}`);
             const topicos = await res.json();
             
@@ -134,7 +143,45 @@
             if(aba === 'estatisticas') carregarEstatisticas();
         }
 
-        // FUNÇÕES DE CRIAÇÃO E IMPORTAÇÃO
+        // --- CRIAR MATÉRIA E TÓPICO NA HORA ---
+        async function novaMateria() {
+            const nome = prompt("Digite o nome da nova Matéria:");
+            if (!nome || nome.trim() === "") return;
+            
+            const res = await fetch('/api/baralhos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome.trim(), usuario_id: usuarioId })
+            });
+            const data = await res.json();
+            
+            // Recarrega tudo e seleciona a nova matéria
+            await inicializarApp();
+            document.getElementById('select-criar-baralho').value = data.id;
+            document.getElementById('select-estudo-baralho').value = data.id;
+            await carregarTopicos('criar');
+        }
+
+        async function novoTopico() {
+            const baralhoId = document.getElementById('select-criar-baralho').value;
+            if (!baralhoId) return alert("Por favor, selecione ou crie uma Matéria primeiro.");
+            
+            const nome = prompt("Digite o nome do novo Tópico:");
+            if (!nome || nome.trim() === "") return;
+            
+            const res = await fetch('/api/topicos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome: nome.trim(), baralho_id: parseInt(baralhoId) })
+            });
+            const data = await res.json();
+            
+            await carregarTopicos('criar');
+            await carregarTopicos('estudo');
+            document.getElementById('select-criar-topico').value = data.id;
+        }
+
+        // --- FUNÇÕES DE CRIAÇÃO E IMPORTAÇÃO DE CARTAS ---
         function mostrarSucesso(msgText) {
             const msg = document.getElementById('msg-sucesso');
             msg.innerText = msgText;
@@ -143,15 +190,16 @@
         }
 
         async function salvarCardUnico() {
-            const topico_id = parseInt(document.getElementById('select-criar-topico').value);
+            const topico_id = document.getElementById('select-criar-topico').value;
+            if(!topico_id) return alert("Crie um Tópico antes de adicionar uma ficha.");
+
             const frente = document.getElementById('nova-frente').value;
             const verso = document.getElementById('novo-verso').value;
-            
             if(!frente || !verso) return alert("Preencha frente e verso!");
 
             await fetch('/api/fichas', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topico_id, frente, verso, usuario_id: usuarioId })
+                body: JSON.stringify({ topico_id: parseInt(topico_id), frente, verso, usuario_id: usuarioId })
             });
 
             document.getElementById('nova-frente').value = '';
@@ -160,32 +208,32 @@
         }
 
         function importarCSV() {
+            const topico_id = document.getElementById('select-criar-topico').value;
+            if(!topico_id) return alert("Crie um Tópico antes de importar um CSV.");
+
             const input = document.getElementById('arquivo-csv');
             if(!input.files[0]) return alert("Selecione um arquivo CSV primeiro.");
             
-            const topico_id = parseInt(document.getElementById('select-criar-topico').value);
             const reader = new FileReader();
-            
             reader.onload = async function(e) {
                 const linhas = e.target.result.split('\n');
                 const fichasParaSalvar = [];
 
                 for(let linha of linhas) {
                     const partes = linha.split(';');
-                    // Adiciona apenas se houver frente e verso (ignorando linhas em branco)
                     if(partes.length >= 2 && partes[0].trim() !== '') {
                         fichasParaSalvar.push({
                             frente: partes[0].trim(),
-                            verso: partes.slice(1).join(';').trim() // Caso a resposta tenha um ponto e vírgula
+                            verso: partes.slice(1).join(';').trim()
                         });
                     }
                 }
 
-                if(fichasParaSalvar.length === 0) return alert("Nenhuma carta válida encontrada. Verifique se o formato é Pergunta;Resposta");
+                if(fichasParaSalvar.length === 0) return alert("Nenhuma carta válida encontrada no CSV.");
 
                 await fetch('/api/fichas/lote', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topico_id, usuario_id: usuarioId, fichas: fichasParaSalvar })
+                    body: JSON.stringify({ topico_id: parseInt(topico_id), usuario_id: usuarioId, fichas: fichasParaSalvar })
                 });
 
                 input.value = '';
@@ -194,7 +242,7 @@
             reader.readAsText(input.files[0]);
         }
 
-        // FUNÇÕES DE ESTUDO
+        // --- FUNÇÕES DE ESTUDO ---
         async function carregarFila() {
             const topicoId = document.getElementById('select-estudo-topico').value;
             if (!topicoId) return;
@@ -253,7 +301,7 @@
             exibirProximaCarta();
         }
 
-        // FUNÇÕES DE ESTATÍSTICA
+        // --- FUNÇÕES DE ESTATÍSTICA ---
         async function carregarEstatisticas() {
             const res = await fetch(`/api/estatisticas/${usuarioId}`);
             const ranking = await res.json();
@@ -261,7 +309,7 @@
             lista.innerHTML = '';
 
             if(ranking.length === 0) {
-                lista.innerHTML = '<p class="text-sm text-gray-500 py-4">Você ainda não registrou erros. Continue estudando!</p>';
+                lista.innerHTML = '<p class="text-sm text-gray-500 py-4 text-center">Você ainda não registrou erros. Continue estudando!</p>';
                 return;
             }
 
